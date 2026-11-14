@@ -3,14 +3,14 @@ import { loadSettings } from './store.js';
 import { sectionToText } from './templates.js';
 
 export const PRESETS = [
-  { id: 'zhipu', name: '智谱 GLM-4.7-Flash（免费，推荐）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.7-flash' },
-  { id: 'zhipu53', name: '智谱 GLM-5.3-Flash（付费）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-5.3-flash' },
-  { id: 'zhipu53x', name: '智谱 GLM-5.3-FlashX（付费，更快）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-5.3-flashx' },
-  { id: 'zhipu46v', name: '智谱 GLM-4.6V-Flash（免费，可读图）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.6v-flash' },
-  { id: 'qwen', name: '阿里百炼 qwen-plus', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
-  { id: 'siliconflow', name: '硅基流动 Qwen2.5-7B', baseUrl: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
-  { id: 'modelscope', name: '魔搭 ModelScope', baseUrl: 'https://api-inference.modelscope.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
-  { id: 'deepseek', name: 'DeepSeek Chat', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  { id: 'zhipu', name: '智谱 GLM-4.7-Flash（免费，需中转）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.7-flash' },
+  { id: 'zhipu53', name: '智谱 GLM-5.3-Flash（付费，需中转）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-5.3-flash' },
+  { id: 'zhipu53x', name: '智谱 GLM-5.3-FlashX（付费，需中转）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-5.3-flashx' },
+  { id: 'zhipu46v', name: '智谱 GLM-4.6V-Flash（免费，需中转）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.6v-flash' },
+  { id: 'qwen', name: '阿里百炼 qwen-plus（可直连）', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
+  { id: 'deepseek', name: 'DeepSeek Chat（可直连）', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  { id: 'siliconflow', name: '硅基流动 Qwen2.5-7B（可直连）', baseUrl: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
+  { id: 'modelscope', name: '魔搭 ModelScope（可直连）', baseUrl: 'https://api-inference.modelscope.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
   { id: 'custom', name: '自定义地址 / 模型', baseUrl: '', model: '' }
 ];
 
@@ -82,7 +82,12 @@ async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35 }) {
   } catch (err) {
     clearTimeout(timer);
     if (err.name === 'AbortError') throw new Error('请求超时（90 秒），模型服务没有响应，稍后重试或换一个模型');
-    throw new Error('无法连接模型服务。常见原因：Base URL 填错，或该服务不允许浏览器直连（跨域 CORS）。可换用支持浏览器调用的地址，或在设置里换一家平台。');
+    let host = '';
+    try { host = new URL(url).host; } catch { /* 地址不合法时留空 */ }
+    if (host.includes('bigmodel.cn')) {
+      throw new Error('智谱接口不允许网页直接调用（跨域 CORS 被浏览器拦截），与 Key 无关。需要填一个中转地址，或到「设置」换用支持直连的服务商：阿里百炼 / DeepSeek / 硅基流动 / 魔搭。');
+    }
+    throw new Error('无法连接模型服务。请检查 Base URL 是否填错，或该服务是否允许浏览器直连（跨域 CORS）。');
   }
   clearTimeout(timer);
 

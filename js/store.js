@@ -127,9 +127,9 @@ export async function deleteNote(id) {
 /* ---------------- 设置 ---------------- */
 
 export const DEFAULT_SETTINGS = {
-  preset: 'zhipu',
-  baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-  model: 'glm-4.7-flash',
+  preset: 'deepseek',
+  baseUrl: 'https://api.deepseek.com/v1',
+  model: 'deepseek-chat',
   apiKey: ''
 };
 
