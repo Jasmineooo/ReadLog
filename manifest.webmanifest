@@ -1,0 +1,17 @@
+{
+  "name": "页边 · 阅读批注与复盘",
+  "short_name": "页边",
+  "description": "为长期阅读建立项目，写下结构化笔记，让 AI 逐段批阅并记录你的进步。",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F3EDE0",
+  "theme_color": "#191611",
+  "icons": [
+    {
+      "src": "icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
