@@ -9,7 +9,7 @@ function renderForm(s) {
       <select class="select" id="aiPreset">
         ${PRESETS.map((p) => `<option value="${p.id}" ${s.preset === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
-      <p class="hint">不确定选哪个：先用「智谱 GLM-4.7-Flash」，免费、注册即用；想更强就换 GLM-5.3-Flash（按量计费）。</p>
+      <p class="hint">默认用 DeepSeek，可直连，充值即可用。智谱接口不支持网页直连（预检被浏览器拦），除非有自己的中转地址。</p>
     </div>
     <div class="form-grid">
       <div class="field">
@@ -87,12 +87,13 @@ export async function render(main) {
         </section>
 
         <section class="card settings-block">
-          <h3>免费 Key 怎么拿</h3>
-          <p class="sub">三个不用花钱的选择</p>
+          <h3>Key 怎么拿</h3>
+          <p class="sub">默认用 DeepSeek；后两家有免费额度</p>
           <ol class="info-list" style="list-style:none">
-            <li><b>智谱</b>：open.bigmodel.cn 注册 → API Keys → 新建，模型填 <span class="tiny">glm-4.7-flash</span>，免费不限量；想更强可换 <span class="tiny">glm-5.3-flash</span>（按量计费）。</li>
-            <li><b>魔搭</b>：modelscope.cn 绑定阿里云账号 → 访问令牌，模型填 <span class="tiny">Qwen/Qwen2.5-7B-Instruct</span>，每天有免费额度。</li>
-            <li><b>阿里百炼</b>：bailian.console.aliyun.com 开通 → API-KEY，模型 <span class="tiny">qwen-plus</span>，新用户每个模型百万 tokens。</li>
+            <li><b>DeepSeek</b>：platform.deepseek.com → 充值 → API keys 新建，模型填 <span class="tiny">deepseek-chat</span>，<b>可直连</b>；按量计费，几块钱能用很久。</li>
+            <li><b>阿里百炼</b>：bailian.console.aliyun.com 开通 → API-KEY，模型 <span class="tiny">qwen-plus</span>，新用户每个模型百万 tokens，<b>可直连</b>。</li>
+            <li><b>魔搭</b>：modelscope.cn 绑定阿里云账号 → 访问令牌，模型填 <span class="tiny">Qwen/Qwen2.5-7B-Instruct</span>，每天有免费额度，<b>可直连</b>。</li>
+            <li><b>智谱</b>：模型免费，但接口不支持网页直连（预检请求被拦），没有中转地址在网页里用不了。</li>
           </ol>
           <p class="hint" style="margin-top:10px">如果测试连接时报跨域（CORS）错误，说明该平台不允许网页直接调用，换一家即可，与 Key 无关。</p>
         </section>
