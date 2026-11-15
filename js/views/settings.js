@@ -9,16 +9,16 @@ function renderForm(s) {
       <select class="select" id="aiPreset">
         ${PRESETS.map((p) => `<option value="${p.id}" ${s.preset === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
       </select>
-      <p class="hint">默认用 DeepSeek，可直连，充值即可用。智谱接口不支持网页直连（预检被浏览器拦），除非有自己的中转地址。</p>
+      <p class="hint">默认用 DeepSeek Flash，可直连，充值即可用。智谱接口不支持网页直连（预检被浏览器拦），除非有自己的中转地址。</p>
     </div>
     <div class="form-grid">
       <div class="field">
         <label class="label">Base URL <em>*</em></label>
-        <input class="input" id="aiBase" value="${esc(s.baseUrl)}" placeholder="https://open.bigmodel.cn/api/paas/v4">
+        <input class="input" id="aiBase" value="${esc(s.baseUrl)}" placeholder="https://api.deepseek.com/v1">
       </div>
       <div class="field">
         <label class="label">模型 <em>*</em></label>
-        <input class="input" id="aiModel" value="${esc(s.model)}" placeholder="glm-4.7-flash">
+        <input class="input" id="aiModel" value="${esc(s.model)}" placeholder="deepseek-flash">
       </div>
     </div>
     <div class="field" style="margin-bottom:10px">
@@ -90,7 +90,7 @@ export async function render(main) {
           <h3>Key 怎么拿</h3>
           <p class="sub">默认用 DeepSeek；后两家有免费额度</p>
           <ol class="info-list" style="list-style:none">
-            <li><b>DeepSeek</b>：platform.deepseek.com → 充值 → API keys 新建，模型填 <span class="tiny">deepseek-chat</span>，<b>可直连</b>；按量计费，几块钱能用很久。</li>
+            <li><b>DeepSeek</b>：platform.deepseek.com → 充值 → API keys 新建，模型填 <span class="tiny">deepseek-flash</span>，<b>可直连</b>；按量计费，几块钱能用很久。</li>
             <li><b>阿里百炼</b>：bailian.console.aliyun.com 开通 → API-KEY，模型 <span class="tiny">qwen-plus</span>，新用户每个模型百万 tokens，<b>可直连</b>。</li>
             <li><b>魔搭</b>：modelscope.cn 绑定阿里云账号 → 访问令牌，模型填 <span class="tiny">Qwen/Qwen2.5-7B-Instruct</span>，每天有免费额度，<b>可直连</b>。</li>
             <li><b>智谱</b>：模型免费，但接口不支持网页直连（预检请求被拦），没有中转地址在网页里用不了。</li>
