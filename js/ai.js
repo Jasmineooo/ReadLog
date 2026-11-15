@@ -54,11 +54,23 @@ function settingsOrThrow() {
   return s;
 }
 
-async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35 }) {
+async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35, jsonMode = false }) {
   const s = settingsOrThrow();
   const url = s.baseUrl.replace(/\/+$/, '') + '/chat/completions';
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 90000);
+
+  const body = {
+    model: s.model,
+    temperature,
+    max_tokens: maxTokens,
+    stream: false,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user }
+    ]
+  };
+  if (jsonMode) body.response_format = { type: 'json_object' };
 
   let res;
   try {
@@ -68,16 +80,7 @@ async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35 }) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + s.apiKey.trim()
       },
-      body: JSON.stringify({
-        model: s.model,
-        temperature,
-        max_tokens: maxTokens,
-        stream: false,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user }
-        ]
-      }),
+      body: JSON.stringify(body),
       signal: ctrl.signal
     });
   } catch (err) {
@@ -114,26 +117,54 @@ async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35 }) {
 
 function parseJSONLoose(text) {
   let t = String(text).trim();
-  t = t.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  // 去掉所有 ```json / ``` 代码围栏
+  t = t.replace(/```(?:json|JSON)?/g, '').trim();
   const start = t.indexOf('{');
   const end = t.lastIndexOf('}');
   if (start < 0 || end <= start) throw new Error('模型没有按要求返回 JSON，请重试一次');
   let body = t.slice(start, end + 1);
-  try {
-    return JSON.parse(body);
-  } catch {
-    body = body.replace(/,\s*([}\]])/g, '$1');
-    try {
-      return JSON.parse(body);
-    } catch {
-      throw new Error('模型返回的 JSON 格式有误，请重试一次（免费模型偶尔会这样）');
-    }
-  }
+
+  const tryParse = (s) => { try { return JSON.parse(s); } catch { return undefined; } };
+
+  // 1. 直接解析
+  let r = tryParse(body);
+  if (r !== undefined) return r;
+
+  // 2. 去掉尾逗号
+  body = body.replace(/,\s*([}\]])/g, '$1');
+  r = tryParse(body);
+  if (r !== undefined) return r;
+
+  // 3. 把字符串里没转义的换行改成 \n
+  let fixed = body.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (m) => m.replace(/\r/g, '').replace(/\n/g, '\\n').replace(/\t/g, '\\t'));
+  r = tryParse(fixed);
+  if (r !== undefined) return r;
+
+  // 4. 清掉残留控制字符
+  fixed = fixed.replace(/[\x00-\x1f]+/g, ' ');
+  r = tryParse(fixed);
+  if (r !== undefined) return r;
+
+  // 5. 最后兜底：把单引号换成双引号（可能误伤撇号，但能救回来）
+  fixed = fixed.replace(/'/g, '"');
+  r = tryParse(fixed);
+  if (r !== undefined) return r;
+
+  throw new Error('模型返回的 JSON 格式有误，请重试一次（模型偶尔会输出不规范的格式）');
 }
 
 async function chatJSON(payload) {
-  const content = await chatRaw(payload);
-  return parseJSONLoose(content);
+  try {
+    const content = await chatRaw({ ...payload, jsonMode: true });
+    return parseJSONLoose(content);
+  } catch (err) {
+    // json_object 模式不被支持或解析失败时，退化为普通模式再试一次
+    if (/json_object|JSON 格式|没有按要求返回 JSON/.test(String(err.message || ''))) {
+      const content = await chatRaw(payload);
+      return parseJSONLoose(content);
+    }
+    throw err;
+  }
 }
 
 const clampScore = (n) => {
@@ -198,7 +229,7 @@ ${DIM_RULES}
   "nextStep": "下一篇同类材料动笔前，具体先做的一件事，一句话"
 }`;
 
-  const raw = await chatJSON({ system: SYSTEM_REVIEW, user, maxTokens: 3000 });
+  const raw = await chatJSON({ system: SYSTEM_REVIEW, user, maxTokens: 4000 });
 
   return {
     createdAt: new Date().toISOString(),
