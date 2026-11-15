@@ -8,8 +8,8 @@ export const PRESETS = [
   { id: 'zhipu53x', name: '智谱 GLM-5.3-FlashX（付费，需中转）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-5.3-flashx' },
   { id: 'zhipu46v', name: '智谱 GLM-4.6V-Flash（免费，需中转）', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4.6v-flash' },
   { id: 'qwen', name: '阿里百炼 qwen-plus（可直连）', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
-  { id: 'deepseek', name: 'DeepSeek Flash（可直连，便宜）', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-flash' },
-  { id: 'deepseekpro', name: 'DeepSeek V4-Pro（可直连，更强）', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-v4-pro' },
+  { id: 'deepseek', name: 'DeepSeek Flash（可直连，便宜）', baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash' },
+  { id: 'deepseekpro', name: 'DeepSeek V4-Pro（可直连，更强）', baseUrl: 'https://api.deepseek.com', model: 'deepseek-v4-pro' },
   { id: 'siliconflow', name: '硅基流动 Qwen2.5-7B（可直连）', baseUrl: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
   { id: 'modelscope', name: '魔搭 ModelScope（可直连）', baseUrl: 'https://api-inference.modelscope.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct' },
   { id: 'custom', name: '自定义地址 / 模型', baseUrl: '', model: '' }
