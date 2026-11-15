@@ -193,13 +193,20 @@ ${text || '（未填写）'}`;
     .map((t) => `- ${t.en || '—'}｜${t.zh || '—'}${t.note ? '：' + t.note : ''}`)
     .join('\n');
 
+  const images = (note.images || []).filter((im) => im && im.data);
+
   const body = String(note.sections ? Object.values(note.sections).join(' ') : '').slice(0, 12000);
 
-  const user = `【阅读项目】${project.title}（${project.kind || '未分类'}）
+  let userText = `【阅读项目】${project.title}（${project.kind || '未分类'}）
 【项目阅读目标】${project.goal || '未设置明确目标'}
 【本篇笔记】${note.title || '未命名'}${note.subtitle ? ' · ' + note.subtitle : ''}
-【正文长度】约 ${body.length} 字
+【正文长度】约 ${body.length} 字`;
 
+  if (images.length) {
+    userText += `\n【附图】共 ${images.length} 张，是本篇文章的截图（封面、段落、图表等）。请结合截图内容来理解笔记里的判断、证据和传导链——如果笔记文字过于简略，可参考截图中的原文补齐上下文，但点评的依据必须是\"笔记实际写了什么\"，而不是截图里有什么。\n`;
+  }
+
+  userText += `
 【笔记结构，共 ${sections.length} 块】
 ${blocks}
 
@@ -229,7 +236,12 @@ ${DIM_RULES}
   "nextStep": "下一篇同类材料动笔前，具体先做的一件事，一句话"
 }`;
 
-  const raw = await chatJSON({ system: SYSTEM_REVIEW, user, maxTokens: 4000 });
+  const userContent = [{ type: 'text', text: userText }, ...images.map((im, i) => ({
+    type: 'image_url',
+    image_url: { url: im.data, detail: 'high' }
+  }))];
+
+  const raw = await chatJSON({ system: SYSTEM_REVIEW, user: userContent, maxTokens: 4000 });
 
   return {
     createdAt: new Date().toISOString(),
