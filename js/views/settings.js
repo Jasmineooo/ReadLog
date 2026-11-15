@@ -14,7 +14,7 @@ function renderForm(s) {
     <div class="form-grid">
       <div class="field">
         <label class="label">Base URL <em>*</em></label>
-        <input class="input" id="aiBase" value="${esc(s.baseUrl)}" placeholder="https://api.deepseek.com/v1">
+        <input class="input" id="aiBase" value="${esc(s.baseUrl)}" placeholder="https://api.deepseek.com">
       </div>
       <div class="field">
         <label class="label">模型 <em>*</em></label>
