@@ -235,9 +235,9 @@ export async function render(main, noteId, projectId) {
 
     <div class="card card-pad" style="margin-top:14px">
       <div class="section-title" style="margin-bottom:6px">${icon('project')} 图片 / 截图
-        <span class="tiny muted" style="margin-left:auto;font-weight:400">文章截图、书页、图表 · 仅用于你自己回看</span>
+        <span class="tiny muted" style="margin-left:auto;font-weight:400">文章截图、书页、图表</span>
       </div>
-      <p class="hint" style="margin-bottom:10px">AI 只分析文字笔记，图片不会上传给模型。</p>
+      <p class="hint" style="margin-bottom:10px">点「AI 复盘」时，这里的截图会一起发给模型，让它能对照原文来批注你的笔记（仅复盘时上传，平时只存在本地）。</p>
       <div class="img-grid" id="imgGrid">
         ${imagesHTML(note.images)}
         <button class="upload-tile" id="btnUpload" type="button"><span class="plus">＋</span>添加图片</button>
