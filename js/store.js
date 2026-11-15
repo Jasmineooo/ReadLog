@@ -129,7 +129,7 @@ export async function deleteNote(id) {
 export const DEFAULT_SETTINGS = {
   preset: 'deepseek',
   baseUrl: 'https://api.deepseek.com/v1',
-  model: 'deepseek-chat',
+  model: 'deepseek-flash',
   apiKey: ''
 };
 
