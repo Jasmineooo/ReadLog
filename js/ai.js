@@ -29,7 +29,7 @@ const SYSTEM_REVIEW = `你是一位严格、具体的阅读教练。你熟悉《
 你在批阅一份阅读笔记。你的职责是判断这份笔记有没有真的抓住、加工、推进思考，而不是夸奖。
 
 规则：
-1. 只依据笔记文本判断，不虚构原文内容；笔记没写的，直接指出缺失。
+1. 只依据笔记文本判断，不虚构原文内容；笔记没写的，直接指出缺失。如果笔记附了「原文锚点」，可以用它核对引述是否准确、判断是否走偏；如果没有锚点，就只评笔记本身的质量，绝不要臆测原书写了什么，也不要指责"漏掉了某章某个论点"。换句话说：评的是"这份笔记作为思维产物好不好"，不是"你有没有读全"。
 2. 每条批评必须指向具体板块或具体表述，禁止"可以更深入""继续加油"这类空话。
 3. 建议必须可执行：给出句式、给出改写示范、指出下一步该查什么。
 4. 尊重笔记作者的专业语境（可能涉及 A 股、ETF、期权、宏观变量），不要泛泛地劝人"多读多想"。
@@ -54,7 +54,12 @@ function settingsOrThrow() {
   return s;
 }
 
-async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35, jsonMode = false }) {
+function isDeepSeek() {
+  const s = loadSettings();
+  return /api\.deepseek\.com/i.test(s.baseUrl || '');
+}
+
+async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35, jsonMode = false, webSearch = false }) {
   const s = settingsOrThrow();
   const url = s.baseUrl.replace(/\/+$/, '') + '/chat/completions';
   const ctrl = new AbortController();
@@ -70,7 +75,9 @@ async function chatRaw({ system, user, maxTokens = 2600, temperature = 0.35, jso
       { role: 'user', content: user }
     ]
   };
-  if (jsonMode) body.response_format = { type: 'json_object' };
+  if (jsonMode && !webSearch) body.response_format = { type: 'json_object' };
+  // DeepSeek 服务端联网工具：模型自己判断要不要搜、搜什么，客户端不执行任何工具
+  if (webSearch) body.tools = [{ type: 'deepseek_web_search' }];
 
   let res;
   try {
@@ -202,8 +209,22 @@ ${text || '（未填写）'}`;
 【本篇笔记】${note.title || '未命名'}${note.subtitle ? ' · ' + note.subtitle : ''}
 【正文长度】约 ${body.length} 字`;
 
+  const imagesOriginal = Boolean(note.imagesOriginal);
+  const anchor = (note.anchor || '').trim();
+  const canWebSearch = !anchor && !imagesOriginal && isDeepSeek();
+
   if (images.length) {
-    userText += `\n【附图】共 ${images.length} 张，是本篇文章的截图（封面、段落、图表等）。请结合截图内容来理解笔记里的判断、证据和传导链——如果笔记文字过于简略，可参考截图中的原文补齐上下文，但点评的依据必须是\"笔记实际写了什么\"，而不是截图里有什么。\n`;
+    userText += imagesOriginal
+      ? `\n【附图】共 ${images.length} 张，作者标明这就是原文全文。请结合截图理解笔记里的判断、证据和传导链；点评的依据仍是"笔记实际写了什么"，截图用来判断有没有误读。\n`
+      : `\n【附图】共 ${images.length} 张，是原文的节选（例如图表、重点段落），不代表全文。可参考它理解笔记，但不要因为它没提到某点就指责笔记遗漏。\n`;
+  }
+
+  if (anchor) {
+    userText += `\n【原文锚点】（作者手录的目录或原文段落，仅用于核对，不是笔记内容，不要对它做板块批注）\n${anchor.slice(0, 4000)}\n`;
+  } else if (canWebSearch) {
+    userText += `\n【联网核对】作者没有提供原文全文（可能只给了节选截图，或什么都没给）。你可以使用联网搜索：检索这本书的简介与书评（出版社介绍、豆瓣、维基百科、书评媒体、作者访谈），用来判断笔记有没有抓住核心命题、有没有明显误读。规则：书评是二手资料，只能提示"这一点值得核实"，不得据此断言原书原文；检索不到可靠资料就只评笔记本身；最多引用 3 条来源。\n`;
+  } else {
+    userText += `\n【原文锚点】未提供。请只评这份笔记自身的质量：结构是否完整、证据是否落地、推论是否接得上、有没有自己的判断。不要假设原书的内容，也不要说笔记"漏掉了某章"。\n`;
   }
 
   userText += `
@@ -233,7 +254,8 @@ ${DIM_RULES}
   ],
   "highlights": ["最多3条，必须引用笔记里的具体内容"],
   "gaps": ["最多3条，按重要性排序"],
-  "nextStep": "下一篇同类材料动笔前，具体先做的一件事，一句话"
+  "nextStep": "下一篇同类材料动笔前，具体先做的一件事，一句话",
+  "sources": ["联网核对过的来源，格式：站点 · 一句话结论；没有联网就返回空数组"]
 }`;
 
   const userContent = [{ type: 'text', text: userText }, ...images.map((im, i) => ({
@@ -241,7 +263,7 @@ ${DIM_RULES}
     image_url: { url: im.data, detail: 'high' }
   }))];
 
-  const raw = await chatJSON({ system: SYSTEM_REVIEW, user: userContent, maxTokens: 4000 });
+  const raw = await chatJSON({ system: SYSTEM_REVIEW, user: userContent, maxTokens: 4000, webSearch: canWebSearch });
 
   return {
     createdAt: new Date().toISOString(),
@@ -266,7 +288,9 @@ ${DIM_RULES}
     })).filter((r) => r.sectionId),
     highlights: asArray(raw.highlights).slice(0, 3).map((x) => String(x).slice(0, 160)),
     gaps: asArray(raw.gaps).slice(0, 3).map((x) => String(x).slice(0, 160)),
-    nextStep: String(raw.nextStep || '').slice(0, 200)
+    nextStep: String(raw.nextStep || '').slice(0, 200),
+    sources: asArray(raw.sources).slice(0, 4).map((x) => String(x).slice(0, 160)).filter(Boolean),
+    usedWeb: canWebSearch
   };
 }
 
