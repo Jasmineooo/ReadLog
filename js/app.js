@@ -2,6 +2,7 @@ import { initStore, db, streakDays } from './store.js';
 import { $, esc, icon, initLightbox, animateRings, toast } from './ui.js';
 import * as dashboard from './views/dashboard.js';
 import * as notesView from './views/notes.js';
+import * as termsView from './views/terms.js';
 import * as projectView from './views/project.js';
 import * as noteView from './views/note.js';
 import * as statsView from './views/stats.js';
@@ -10,15 +11,23 @@ import * as settingsView from './views/settings.js';
 const NAV = [
   { hash: '#/', key: 'home', label: '阅览台', icon: 'home' },
   { hash: '#/notes', key: 'notes', label: '笔记', icon: 'note' },
+  { hash: '#/terms', key: 'terms', label: '术语', icon: 'terms' },
   { hash: '#/stats', key: 'stats', label: '统计', icon: 'stats' },
   { hash: '#/settings', key: 'settings', label: '设置', icon: 'settings' }
 ];
+
+function termTotal() {
+  return db.notes.reduce((n, note) => n + (note.terms || [])
+    .filter((t) => (t.en || '').trim() || (t.zh || '').trim()).length, 0);
+}
 
 function renderNav() {
   const nav = $('#nav');
   const active = currentKey();
   nav.innerHTML = NAV.map((item) => {
-    const count = item.key === 'notes' && db.notes.length ? `<span class="nav-count">${db.notes.length}</span>` : '';
+    let count = '';
+    if (item.key === 'notes' && db.notes.length) count = `<span class="nav-count">${db.notes.length}</span>`;
+    if (item.key === 'terms' && termTotal()) count = `<span class="nav-count">${termTotal()}</span>`;
     return `<a class="nav-item ${active === item.key ? 'active' : ''}" href="${item.hash}">
       ${icon(item.icon)}<span>${item.label}</span>${count}
     </a>`;
@@ -40,6 +49,7 @@ function currentKey() {
   if (parts[0] === 'project') return 'home';
   if (parts[0] === 'note') return parts[1] === 'new' ? 'home' : 'notes';
   if (parts[0] === 'notes') return 'notes';
+  if (parts[0] === 'terms') return 'terms';
   if (parts[0] === 'stats') return 'stats';
   if (parts[0] === 'settings') return 'settings';
   return '';
@@ -60,6 +70,8 @@ async function route() {
       await dashboard.render(main);
     } else if (parts[0] === 'notes') {
       await notesView.render(main);
+    } else if (parts[0] === 'terms') {
+      await termsView.render(main);
     } else if (parts[0] === 'stats') {
       await statsView.render(main);
     } else if (parts[0] === 'settings') {
