@@ -28,6 +28,7 @@ function reportHTML(review) {
             <span class="seal">${gradeOf(review.score)}</span>
             <span class="chip chip-plain">${fmtDate(review.createdAt)} 复盘</span>
             <span class="chip chip-plain">${esc(review.model || '')}</span>
+            ${review.usedWeb ? '<span class="chip chip-plain">联网核对</span>' : ''}
             <button class="btn btn-ghost btn-sm" data-reanalyze style="margin-left:auto">${icon('spark')} 重新复盘</button>
           </div>
           <p class="verdict">${esc(review.summary || '')}</p>
@@ -52,6 +53,10 @@ function reportHTML(review) {
         </div>
       </div>
       ${review.nextStep ? `<div class="next-step"><b>下一步</b><span>${esc(review.nextStep)}</span></div>` : ''}
+      ${(review.sources || []).length ? `<div class="report-sources">
+        <b>联网参考</b>
+        <ul class="bullets">${review.sources.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>
+      </div>` : ''}
     </div>`;
 }
 
@@ -194,6 +199,8 @@ export async function render(main, noteId, projectId) {
   note.sections = note.sections || {};
   note.terms = note.terms || [];
   note.images = note.images || [];
+  note.anchor = note.anchor || '';
+  if (note.imagesOriginal === undefined) note.imagesOriginal = project.kind !== 'book';
   sections.forEach((s) => {
     if (note.sections[s.id] == null) note.sections[s.id] = emptySectionContent(s);
   });
@@ -214,6 +221,15 @@ export async function render(main, noteId, projectId) {
         <span class="tiny muted" id="wordCount">${noteWordCount(note)} 字</span>
       </div>
     </header>
+
+    <details class="anchor-box" ${note.anchor ? 'open' : ''}>
+      <summary>
+        <span class="anchor-name">原文锚点</span>
+        <span class="tiny muted">可选 · 贴目录或关键段落，让 AI 能核对你的引述</span>
+      </summary>
+      <p class="hint">书籍不必上传全文，也可以不填：留空且未勾选「截图即原文」时，DeepSeek 会自动联网找书评与简介来核对。填了就只以你的为准。</p>
+      <textarea class="sec-textarea" id="noteAnchor" style="min-height:96px" placeholder="例：第 3 章「价格的逻辑」提出……（或直接贴你划线的那几段）">${esc(note.anchor)}</textarea>
+    </details>
 
     <div id="reviewSlot">${reportHTML(note.aiReview)}</div>
     <div id="reviewWait"></div>
@@ -237,7 +253,12 @@ export async function render(main, noteId, projectId) {
       <div class="section-title" style="margin-bottom:6px">${icon('project')} 图片 / 截图
         <span class="tiny muted" style="margin-left:auto;font-weight:400">文章截图、书页、图表</span>
       </div>
-      <p class="hint" style="margin-bottom:10px">点「AI 复盘」时，这里的截图会一起发给模型，让它能对照原文来批注你的笔记（仅复盘时上传，平时只存在本地）。</p>
+      <p class="hint" style="margin-bottom:8px">点「AI 复盘」时，这里的截图会一起发给模型（仅复盘时上传，平时只存在本地）。</p>
+      <label class="chk-row">
+        <input type="checkbox" id="imgOriginal" ${note.imagesOriginal ? 'checked' : ''}>
+        <span>这些截图就是原文全文</span>
+        <em id="imgOriginalHint">${note.imagesOriginal ? '已勾选：AI 以截图为准，不再联网' : '未勾选：视为节选，复盘时 AI 会联网核对'}</em>
+      </label>
       <div class="img-grid" id="imgGrid">
         ${imagesHTML(note.images)}
         <button class="upload-tile" id="btnUpload" type="button"><span class="plus">＋</span>添加图片</button>
@@ -261,7 +282,7 @@ export async function render(main, noteId, projectId) {
   const persist = async (silent = false) => {
     try {
       if (!persisted) {
-        if (!note.title.trim() && noteWordCount(note) === 0 && !(note.images || []).length) return;
+        if (!note.title.trim() && noteWordCount(note) === 0 && !(note.images || []).length && !(note.anchor || '').trim()) return;
         persisted = true;
         history.replaceState(null, '', '#/note/' + note.id);
       }
@@ -288,6 +309,13 @@ export async function render(main, noteId, projectId) {
   });
   main.querySelector('#noteSub').addEventListener('input', (e) => {
     note.subtitle = e.target.value;
+    setState('正在保存', 'saving');
+    schedule();
+  });
+
+  const anchorEl = main.querySelector('#noteAnchor');
+  if (anchorEl) anchorEl.addEventListener('input', (e) => {
+    note.anchor = e.target.value;
     setState('正在保存', 'saving');
     schedule();
   });
@@ -448,6 +476,14 @@ export async function render(main, noteId, projectId) {
   /* ---------- 图片 ---------- */
   const imgGrid = main.querySelector('#imgGrid');
   const uploadInput = main.querySelector('#imgFile');
+  main.querySelector('#imgOriginal').addEventListener('change', (e) => {
+    note.imagesOriginal = e.target.checked;
+    main.querySelector('#imgOriginalHint').textContent = note.imagesOriginal
+      ? '已勾选：AI 以截图为准，不再联网'
+      : '未勾选：视为节选，复盘时 AI 会联网核对';
+    setState('正在保存', 'saving');
+    schedule();
+  });
   main.querySelector('#btnUpload').addEventListener('click', () => uploadInput.click());
   uploadInput.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files || []);
